@@ -5,6 +5,8 @@ public class Door2Controller : MonoBehaviour
 {
     public Animator anim;
     public Transform player;
+    public AudioSource audioSource;
+    public AudioClip doorSound;
 
     private bool isOpen = false;
     private bool isAnimating = false;
@@ -20,6 +22,7 @@ public class Door2Controller : MonoBehaviour
         {
             isOpen = true;
             isAnimating = true;
+            audioSource.PlayOneShot(doorSound);
             anim.SetBool(NearbyHash, true);
             StartCoroutine(WaitForState("door_2_opened"));
         }
@@ -27,6 +30,7 @@ public class Door2Controller : MonoBehaviour
         {
             isOpen = false;
             isAnimating = true;
+            audioSource.PlayOneShot(doorSound);
             anim.SetBool(NearbyHash, false);
             StartCoroutine(WaitForState("door_2_closed"));
         }
