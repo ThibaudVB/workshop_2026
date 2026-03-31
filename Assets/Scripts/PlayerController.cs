@@ -16,6 +16,12 @@ public class PlayerController : MonoBehaviour
     public float crouchHeight = 0.5f;
     public float normalHeight = 2f;
 
+    [Header("Stamina")]
+    public float maxStamina = 100f;
+    public float staminaDrainRate = 20f;
+    public float staminaRegenRate = 15f;
+    public float staminaRegenDelay = 1.5f;
+
     [Header("Bruits de pas")]
     public AudioClip[] footstepSounds;
     public float walkStepInterval = 0.5f;
@@ -32,6 +38,15 @@ public class PlayerController : MonoBehaviour
     private AudioSource audioSource;
     private float stepTimer = 0f;
 
+    // Stamina
+    private float currentStamina;
+    private float regenTimer;
+
+    // Properties pour l'UI
+    public float CurrentStamina => currentStamina;
+    public float StaminaPercent => currentStamina / maxStamina;
+    public float MaxStamina => maxStamina;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -42,6 +57,9 @@ public class PlayerController : MonoBehaviour
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.spatialBlend = 0f;
         audioSource.playOnAwake = false;
+
+        // Initialiser la stamina
+        currentStamina = maxStamina;
     }
 
     void Update()
@@ -50,6 +68,7 @@ public class PlayerController : MonoBehaviour
         HandleCrouch();
         HandleJump();
         HandleFootsteps();
+        HandleStamina();
     }
 
     void FixedUpdate()
@@ -77,14 +96,50 @@ public class PlayerController : MonoBehaviour
         if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
         if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
 
+        // Déterminer la vitesse
         float speed = walkSpeed;
-        if (Keyboard.current.leftShiftKey.isPressed && !isCrouching) speed = runSpeed;
+        bool wantsToRun = Keyboard.current.leftShiftKey.isPressed && !isCrouching;
+        bool canRun = wantsToRun && currentStamina > 0 && moveInput != Vector2.zero;
+        
+        if (canRun) speed = runSpeed;
         if (isCrouching) speed = crouchSpeed;
 
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         Vector3 velocity = move * speed;
         velocity.y = rb.linearVelocity.y;
         rb.linearVelocity = velocity;
+    }
+
+    void HandleStamina()
+    {
+        Vector2 moveInput = Vector2.zero;
+        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
+        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
+
+        bool isRunning = Keyboard.current.leftShiftKey.isPressed && !isCrouching && moveInput != Vector2.zero && currentStamina > 0;
+
+        if (isRunning)
+        {
+            // Drainer la stamina
+            currentStamina -= staminaDrainRate * Time.deltaTime;
+            currentStamina = Mathf.Max(0f, currentStamina);
+            regenTimer = staminaRegenDelay;
+        }
+        else
+        {
+            // Régénérer après le délai
+            if (regenTimer > 0)
+            {
+                regenTimer -= Time.deltaTime;
+            }
+            else
+            {
+                currentStamina += staminaRegenRate * Time.deltaTime;
+                currentStamina = Mathf.Min(maxStamina, currentStamina);
+            }
+        }
     }
 
     void HandleFootsteps()
@@ -103,7 +158,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        bool isRunning = Keyboard.current.leftShiftKey.isPressed && !isCrouching;
+        bool isRunning = Keyboard.current.leftShiftKey.isPressed && !isCrouching && currentStamina > 0;
         float interval = isRunning ? runStepInterval : isCrouching ? crouchStepInterval : walkStepInterval;
 
         stepTimer += Time.deltaTime;
@@ -136,6 +191,7 @@ public class PlayerController : MonoBehaviour
         {
             isCrouching = !isCrouching;
             capsule.height = isCrouching ? crouchHeight : normalHeight;
+            capsule.center = new Vector3(0, (isCrouching ? crouchHeight : normalHeight) / 2f, 0);
             cam.transform.localPosition = new Vector3(0, isCrouching ? 0.2f : 0.7f, 0);
         }
     }
