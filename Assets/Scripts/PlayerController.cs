@@ -16,12 +16,21 @@ public class PlayerController : MonoBehaviour
     public float crouchHeight = 0.5f;
     public float normalHeight = 2f;
 
+    [Header("Bruits de pas")]
+    public AudioClip[] footstepSounds;
+    public float walkStepInterval = 0.5f;
+    public float runStepInterval = 0.3f;
+    public float crouchStepInterval = 0.7f;
+    public float footstepVolume = 0.5f;
+
     private Rigidbody rb;
     private Camera cam;
     private float xRotation = 0f;
     private bool isGrounded;
     private bool isCrouching;
     private CapsuleCollider capsule;
+    private AudioSource audioSource;
+    private float stepTimer = 0f;
 
     void Start()
     {
@@ -29,6 +38,10 @@ public class PlayerController : MonoBehaviour
         cam = GetComponentInChildren<Camera>();
         capsule = GetComponent<CapsuleCollider>();
         Cursor.lockState = CursorLockMode.Locked;
+
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.spatialBlend = 0f;
+        audioSource.playOnAwake = false;
     }
 
     void Update()
@@ -36,6 +49,7 @@ public class PlayerController : MonoBehaviour
         LookAround();
         HandleCrouch();
         HandleJump();
+        HandleFootsteps();
     }
 
     void FixedUpdate()
@@ -46,11 +60,10 @@ public class PlayerController : MonoBehaviour
     void LookAround()
     {
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
-       float mouseX = mouseDelta.x * mouseSensitivity * 0.1f;
+        float mouseX = mouseDelta.x * mouseSensitivity * 0.1f;
         float mouseY = mouseDelta.y * mouseSensitivity * 0.1f;
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -80f, 80f);
-
         cam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
     }
@@ -72,6 +85,40 @@ public class PlayerController : MonoBehaviour
         Vector3 velocity = move * speed;
         velocity.y = rb.linearVelocity.y;
         rb.linearVelocity = velocity;
+    }
+
+    void HandleFootsteps()
+    {
+        if (!isGrounded) return;
+
+        Vector2 moveInput = Vector2.zero;
+        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
+        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
+
+        if (moveInput == Vector2.zero)
+        {
+            stepTimer = 0f;
+            return;
+        }
+
+        bool isRunning = Keyboard.current.leftShiftKey.isPressed && !isCrouching;
+        float interval = isRunning ? runStepInterval : isCrouching ? crouchStepInterval : walkStepInterval;
+
+        stepTimer += Time.deltaTime;
+        if (stepTimer >= interval)
+        {
+            stepTimer = 0f;
+            PlayFootstep();
+        }
+    }
+
+    void PlayFootstep()
+    {
+        if (footstepSounds == null || footstepSounds.Length == 0) return;
+        AudioClip clip = footstepSounds[Random.Range(0, footstepSounds.Length)];
+        audioSource.PlayOneShot(clip, footstepVolume);
     }
 
     void HandleJump()
