@@ -4599,7 +4599,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 8542f42ce0e92cc4ab90ff51f940686d, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: c07ae2d413ec50746a95eb43cb5b477a, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &487042647 stripped
 GameObject:
@@ -5043,38 +5043,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -625678765711120622, guid: 3cefd490162a4ac4694dfebabdfafdaa, type: 3}
---- !u!114 &574448672
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 574448664}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
-  m_SerializedVersion: 0
-  m_AgentTypeID: 0
-  m_CollectObjects: 0
-  m_Size: {x: 10, y: 10, z: 10}
-  m_Center: {x: 0, y: 2, z: 0}
-  m_LayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_UseGeometry: 0
-  m_DefaultArea: 0
-  m_GenerateLinks: 0
-  m_IgnoreNavMeshAgent: 1
-  m_IgnoreNavMeshObstacle: 1
-  m_OverrideTileSize: 0
-  m_TileSize: 256
-  m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.16666667
-  m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 0}
-  m_BuildHeightMesh: 0
 --- !u!43 &590077454
 Mesh:
   m_ObjectHideFlags: 0
@@ -8135,15 +8103,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 19.742245
+      value: 14.242245
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1
+      value: 1.4999999
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.752877
+      value: 7.002877
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -8179,7 +8147,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3081994679161391779, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -2.3333335
+      value: -1.3333335
       objectReference: {fileID: 0}
     - target: {fileID: -3081994679161391779, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       propertyPath: m_LocalPosition.z
@@ -8205,9 +8173,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1658178994}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1658178993}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: cb7cf0e22a14c7049a2438cbfb3d92f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1658178992}
@@ -17381,33 +17346,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AlienMonster
   player: {fileID: 650094186}
   detectionRange: 15
-  screamRange: 5
+  screamRange: 2
   randomMoveRadius: 5
   randomMoveInterval: 3
   screamerImage: {fileID: 0}
   screamerSound: {fileID: 0}
   screamerDuration: 1
---- !u!65 &1658178993
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1658178985}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!195 &1658178994
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -17427,7 +17371,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
-  m_BaseOffset: -1
+  m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!1 &1677798039
@@ -18924,7 +18868,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 0}
+  m_NavMeshData: {fileID: 23800000, guid: be92cad294c04ea4a99c1884916d92aa, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &2081367354
 GameObject:
@@ -19223,9 +19167,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -4005741085231229209, guid: 3cefd490162a4ac4694dfebabdfafdaa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 574448668}
-    - targetCorrespondingSourceObject: {fileID: -4005741085231229209, guid: 3cefd490162a4ac4694dfebabdfafdaa, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 574448672}
     - targetCorrespondingSourceObject: {fileID: -967209833785789723, guid: 3cefd490162a4ac4694dfebabdfafdaa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 229883881}
