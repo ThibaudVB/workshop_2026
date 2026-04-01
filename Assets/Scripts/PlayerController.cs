@@ -58,7 +58,6 @@ public class PlayerController : MonoBehaviour
         audioSource.spatialBlend = 0f;
         audioSource.playOnAwake = false;
 
-        // Initialiser la stamina
         currentStamina = maxStamina;
     }
 
@@ -96,11 +95,10 @@ public class PlayerController : MonoBehaviour
         if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
         if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
 
-        // Déterminer la vitesse
         float speed = walkSpeed;
         bool wantsToRun = Keyboard.current.leftShiftKey.isPressed && !isCrouching;
         bool canRun = wantsToRun && currentStamina > 0 && moveInput != Vector2.zero;
-        
+
         if (canRun) speed = runSpeed;
         if (isCrouching) speed = crouchSpeed;
 
@@ -122,14 +120,12 @@ public class PlayerController : MonoBehaviour
 
         if (isRunning)
         {
-            // Drainer la stamina
             currentStamina -= staminaDrainRate * Time.deltaTime;
             currentStamina = Mathf.Max(0f, currentStamina);
             regenTimer = staminaRegenDelay;
         }
         else
         {
-            // Régénérer après le délai
             if (regenTimer > 0)
             {
                 regenTimer -= Time.deltaTime;
