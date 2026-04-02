@@ -10,10 +10,17 @@ public class AlienMonster : MonoBehaviour
     public float randomMoveRadius = 5f;
     public float randomMoveInterval = 3f;
 
-    [Header("Screamer")]
-    public GameObject screamerImage;
+    [Header("Screamer Setup")]
+    public GameObject screamerScene;        // La scène entière du screamer
+    public GameObject screamerPanel;        // Le panel noir UI
+    public Animator screamerMonsterAnimator; // L'Animator du monstre dans la scène screamer
+    public string screamerAnimationTrigger = "Scream"; // Le trigger de l'animation screamer
     public AudioClip screamerSound;
-    public float screamerDuration = 1f;
+    public float screamerDuration = 3f;
+
+    [Header("Cameras")]
+    public Camera mainCamera;               // La caméra principale du joueur
+    public Camera screamerCamera;           // La caméra de la scène screamer
 
     private NavMeshAgent agent;
     private AudioSource audioSource;
@@ -32,6 +39,18 @@ public class AlienMonster : MonoBehaviour
         player = GameObject.FindWithTag("Player").transform;
         playerSpawnPoint = player.position;
         monsterSpawnPoint = transform.position;
+
+        // Trouver la main camera si pas assignée
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        // S'assurer que le screamer est désactivé au départ
+        if (screamerScene != null)
+            screamerScene.SetActive(false);
+        if (screamerPanel != null)
+            screamerPanel.SetActive(false);
+        if (screamerCamera != null)
+            screamerCamera.gameObject.SetActive(false);
     }
 
     void Update()
@@ -64,11 +83,8 @@ public class AlienMonster : MonoBehaviour
     {
         if (animator == null) return;
 
-        // Envoie la vitesse à l'Animator
         float speed = agent.velocity.magnitude;
         animator.SetFloat("Speed", speed);
-        
-        // Envoie l'état de chasse
         animator.SetBool("IsChasing", isChasing);
     }
 
@@ -101,31 +117,50 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
+        // 1. Arrêter le monstre
         agent.isStopped = true;
         isChasing = false;
 
-        // Jouer l'animation Attack
-        if (animator != null)
+        // 2. Désactiver la caméra principale
+        if (mainCamera != null)
+            mainCamera.gameObject.SetActive(false);
+
+        // 3. Activer le panel noir
+        if (screamerPanel != null)
+            screamerPanel.SetActive(true);
+
+        // 4. Activer la scène screamer + caméra
+        if (screamerScene != null)
+            screamerScene.SetActive(true);
+        if (screamerCamera != null)
+            screamerCamera.gameObject.SetActive(true);
+
+        // 5. Jouer l'animation du monstre screamer
+        if (screamerMonsterAnimator != null)
         {
-            animator.SetTrigger("Attack");
+            screamerMonsterAnimator.SetTrigger(screamerAnimationTrigger);
         }
 
-        // Affiche screamer
-        if (screamerImage != null)
-            screamerImage.SetActive(true);
-
-        // Joue le son
+        // 6. Jouer le son
         if (screamerSound != null && audioSource != null)
             audioSource.PlayOneShot(screamerSound);
 
-        // Attendre
+        // 7. Attendre la durée du screamer
         yield return new WaitForSeconds(screamerDuration);
 
-        // Cache screamer
-        if (screamerImage != null)
-            screamerImage.SetActive(false);
+        // 8. Désactiver le screamer
+        if (screamerScene != null)
+            screamerScene.SetActive(false);
+        if (screamerPanel != null)
+            screamerPanel.SetActive(false);
+        if (screamerCamera != null)
+            screamerCamera.gameObject.SetActive(false);
 
-        // Respawn joueur
+        // 9. Réactiver la caméra principale
+        if (mainCamera != null)
+            mainCamera.gameObject.SetActive(true);
+
+        // 10. Respawn joueur
         Rigidbody playerRb = player.GetComponent<Rigidbody>();
         if (playerRb != null)
         {
@@ -137,17 +172,16 @@ public class AlienMonster : MonoBehaviour
             player.position = playerSpawnPoint;
         }
 
-        // Respawn monstre
+        // 11. Respawn monstre
         agent.enabled = false;
         transform.position = monsterSpawnPoint;
         agent.enabled = true;
         agent.isStopped = false;
 
-        // Reset
+        // 12. Reset
         hasScreamed = false;
         isChasing = false;
 
-        // Reset animations
         if (animator != null)
         {
             animator.SetFloat("Speed", 0f);
