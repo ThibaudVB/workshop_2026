@@ -90,7 +90,7 @@ public class AlienMonster : MonoBehaviour
 
     void ChasePlayer()
     {
-        agent.speed = 3.5f;
+        agent.speed = 30f;
         agent.SetDestination(player.position);
         isChasing = true;
     }
