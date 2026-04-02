@@ -13,8 +13,9 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 2f;
 
     [Header("Accroupissement")]
-    public float crouchHeight = 0.5f;
+    public float crouchHeight = 1f;
     public float normalHeight = 2f;
+    public float crouchTransitionSpeed = 10f;
 
     [Header("Stamina")]
     public float maxStamina = 100f;
@@ -34,15 +35,16 @@ public class PlayerController : MonoBehaviour
     private float xRotation = 0f;
     private bool isGrounded;
     private bool isCrouching;
+    private bool wantsToCrouch;
     private CapsuleCollider capsule;
     private AudioSource audioSource;
     private float stepTimer = 0f;
 
-    // Stamina
     private float currentStamina;
     private float regenTimer;
 
-    // Properties pour l'UI
+    private Vector2 moveInput;
+
     public float CurrentStamina => currentStamina;
     public float StaminaPercent => currentStamina / maxStamina;
     public float MaxStamina => maxStamina;
@@ -63,6 +65,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        ReadInput();
         LookAround();
         HandleCrouch();
         HandleJump();
@@ -73,6 +76,15 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Move();
+    }
+
+    void ReadInput()
+    {
+        moveInput = Vector2.zero;
+        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
+        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
     }
 
     void LookAround()
@@ -88,13 +100,6 @@ public class PlayerController : MonoBehaviour
 
     void Move()
     {
-        Vector2 moveInput = Vector2.zero;
-
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
-
         float speed = walkSpeed;
         bool wantsToRun = Keyboard.current.leftShiftKey.isPressed && !isCrouching;
         bool canRun = wantsToRun && currentStamina > 0 && moveInput != Vector2.zero;
@@ -103,19 +108,13 @@ public class PlayerController : MonoBehaviour
         if (isCrouching) speed = crouchSpeed;
 
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
-        Vector3 velocity = move * speed;
+        Vector3 velocity = move.normalized * speed;
         velocity.y = rb.linearVelocity.y;
         rb.linearVelocity = velocity;
     }
 
     void HandleStamina()
     {
-        Vector2 moveInput = Vector2.zero;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
-
         bool isRunning = Keyboard.current.leftShiftKey.isPressed && !isCrouching && moveInput != Vector2.zero && currentStamina > 0;
 
         if (isRunning)
@@ -127,9 +126,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             if (regenTimer > 0)
-            {
                 regenTimer -= Time.deltaTime;
-            }
             else
             {
                 currentStamina += staminaRegenRate * Time.deltaTime;
@@ -140,15 +137,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleFootsteps()
     {
-        if (!isGrounded) return;
-
-        Vector2 moveInput = Vector2.zero;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveInput.y += 1;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveInput.y -= 1;
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveInput.x -= 1;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveInput.x += 1;
-
-        if (moveInput == Vector2.zero)
+        if (!isGrounded || moveInput == Vector2.zero)
         {
             stepTimer = 0f;
             return;
@@ -173,22 +162,62 @@ public class PlayerController : MonoBehaviour
     }
 
     void HandleJump()
+{
+    float rayLength = (capsule.height / 2f) + 0.2f;
+    isGrounded = Physics.SphereCast(transform.position + Vector3.up * 0.3f, 0.25f, Vector3.down, out _, rayLength);
+
+    if (Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
     {
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
-        if (Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
+        if (isCrouching && CanStandUp())
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            isCrouching = false;
+            capsule.height = normalHeight;
+            capsule.center = new Vector3(0, normalHeight / 2f, 0);
+            cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
+        }
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+    }
+}
+
+    void HandleCrouch()
+{
+    if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
+    {
+        if (!isCrouching)
+        {
+            isCrouching = true;
+            capsule.height = crouchHeight;
+            capsule.center = new Vector3(0, crouchHeight / 2f, 0);
+            cam.transform.localPosition = new Vector3(0, crouchHeight - 0.2f, 0);
+        }
+        else if (CanStandUp())
+        {
+            isCrouching = false;
+            capsule.height = normalHeight;
+            capsule.center = new Vector3(0, normalHeight / 2f, 0);
+            cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
         }
     }
 
-    void HandleCrouch()
+        isCrouching = wantsToCrouch;
+
+        // Transition smooth de la hauteur du capsule
+        float targetHeight = isCrouching ? crouchHeight : normalHeight;
+        capsule.height = Mathf.Lerp(capsule.height, targetHeight, Time.deltaTime * crouchTransitionSpeed);
+        capsule.center = new Vector3(0, capsule.height / 2f, 0);
+
+        // Transition smooth de la caméra
+        float targetCamY = isCrouching ? crouchHeight - 0.2f : normalHeight - 0.3f;
+        Vector3 camPos = cam.transform.localPosition;
+        camPos.y = Mathf.Lerp(camPos.y, targetCamY, Time.deltaTime * crouchTransitionSpeed);
+        cam.transform.localPosition = camPos;
+    }
+
+    bool CanStandUp()
     {
-        if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
-        {
-            isCrouching = !isCrouching;
-            capsule.height = isCrouching ? crouchHeight : normalHeight;
-            capsule.center = new Vector3(0, (isCrouching ? crouchHeight : normalHeight) / 2f, 0);
-            cam.transform.localPosition = new Vector3(0, isCrouching ? 0.2f : 0.7f, 0);
-        }
+        // Vérifie s'il y a de la place au-dessus pour se relever
+        float checkDistance = normalHeight - capsule.height;
+        Vector3 origin = transform.position + Vector3.up * capsule.height;
+        return !Physics.Raycast(origin, Vector3.up, checkDistance + 0.1f);
     }
 }
