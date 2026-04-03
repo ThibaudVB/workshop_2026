@@ -14,6 +14,9 @@ public class MaintButton2 : MonoBehaviour
     public GameObject Needle;
     public TextMeshProUGUI QTEText;
 
+    [Header("Lumières à allumer")]
+    public Light[] spotLights;
+
     [Header("Paramètres")]
     public float interactionDistance = 3f;
     public float qteDuration = 5f;
@@ -50,8 +53,17 @@ public class MaintButton2 : MonoBehaviour
             promptObject.SetActive(false);
         if (QTEPanel != null)
             QTEPanel.SetActive(false);
-    }
 
+        // Commente ces lignes temporairement
+        foreach (Light light in spotLights)
+        {
+            if (light != null)
+            {
+                light.gameObject.SetActive(false);
+                light.enabled = false;
+            }
+        }
+    }
     void Update()
     {
         if (qteActive)
@@ -123,7 +135,7 @@ public class MaintButton2 : MonoBehaviour
             Needle.transform.localEulerAngles = Vector3.zero;
 
         if (QTEText != null)
-            QTEText.text = "";  // On laisse le texte vide
+            QTEText.text = "";
 
         Debug.Log("QTE lancé ! Zone à " + successAngle + "°");
     }
@@ -132,7 +144,6 @@ public class MaintButton2 : MonoBehaviour
     {
         timer -= Time.deltaTime;
 
-        // Tourne l'aiguille
         needleAngle += needleSpeed * Time.deltaTime;
         if (needleAngle >= 360f)
             needleAngle -= 360f;
@@ -140,14 +151,12 @@ public class MaintButton2 : MonoBehaviour
         if (Needle != null)
             Needle.transform.localEulerAngles = new Vector3(0, 0, -needleAngle);
 
-        // Joueur appuie sur E
         if (interactAction.WasPressedThisFrame())
         {
             CheckNeedlePosition();
             return;
         }
 
-        // Temps écoulé
         if (timer <= 0f)
             QTEFail();
     }
@@ -178,9 +187,14 @@ public class MaintButton2 : MonoBehaviour
             qteActive = false;
             waitingForInput = false;
             qteSuccessCount = 0;
+
             if (QTEPanel != null)
                 QTEPanel.SetActive(false);
-            Debug.Log("Tous les QTE réussis !");
+
+            // Allume toutes les lumières
+            AllumerLumieres();
+
+            Debug.Log("Tous les QTE réussis ! Lumières allumées !");
         }
         else
         {
@@ -189,6 +203,19 @@ public class MaintButton2 : MonoBehaviour
         }
     }
 
+    void AllumerLumieres()
+    {
+        foreach (Light light in spotLights)
+        {
+            if (light != null)
+            {
+                // Active le GameObject ET le composant Light
+                light.gameObject.SetActive(true);
+                light.enabled = true;
+                Debug.Log("Lumière allumée : " + light.gameObject.name);
+            }
+        }
+    }
     void QTEFail()
     {
         qteActive = false;
