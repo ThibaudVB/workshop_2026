@@ -1,4 +1,6 @@
 ﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="VRM10.Editor.csproj" />
   <Project Path="VRM10.csproj" />
   <Project Path="VRM10.MToon10.csproj" />
