@@ -65,6 +65,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Stop tout si mort
+        if (AlienMonster.IsDead) return;
+
         ReadInput();
         LookAround();
         HandleCrouch();
@@ -75,6 +78,8 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        // Stop tout si mort
+        if (AlienMonster.IsDead) return;
         Move();
     }
 
@@ -162,51 +167,49 @@ public class PlayerController : MonoBehaviour
     }
 
     void HandleJump()
-{
-    float rayLength = (capsule.height / 2f) + 0.2f;
-    isGrounded = Physics.SphereCast(transform.position + Vector3.up * 0.3f, 0.25f, Vector3.down, out _, rayLength);
-
-    if (Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
     {
-        if (isCrouching && CanStandUp())
+        float rayLength = (capsule.height / 2f) + 0.2f;
+        isGrounded = Physics.SphereCast(transform.position + Vector3.up * 0.3f, 0.25f, Vector3.down, out _, rayLength);
+
+        if (Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
         {
-            isCrouching = false;
-            capsule.height = normalHeight;
-            capsule.center = new Vector3(0, normalHeight / 2f, 0);
-            cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
+            if (isCrouching && CanStandUp())
+            {
+                isCrouching = false;
+                capsule.height = normalHeight;
+                capsule.center = new Vector3(0, normalHeight / 2f, 0);
+                cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
+            }
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
-}
 
     void HandleCrouch()
-{
-    if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
     {
-        if (!isCrouching)
+        if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
         {
-            isCrouching = true;
-            capsule.height = crouchHeight;
-            capsule.center = new Vector3(0, crouchHeight / 2f, 0);
-            cam.transform.localPosition = new Vector3(0, crouchHeight - 0.2f, 0);
+            if (!isCrouching)
+            {
+                isCrouching = true;
+                capsule.height = crouchHeight;
+                capsule.center = new Vector3(0, crouchHeight / 2f, 0);
+                cam.transform.localPosition = new Vector3(0, crouchHeight - 0.2f, 0);
+            }
+            else if (CanStandUp())
+            {
+                isCrouching = false;
+                capsule.height = normalHeight;
+                capsule.center = new Vector3(0, normalHeight / 2f, 0);
+                cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
+            }
         }
-        else if (CanStandUp())
-        {
-            isCrouching = false;
-            capsule.height = normalHeight;
-            capsule.center = new Vector3(0, normalHeight / 2f, 0);
-            cam.transform.localPosition = new Vector3(0, normalHeight - 0.3f, 0);
-        }
-    }
 
         isCrouching = wantsToCrouch;
 
-        // Transition smooth de la hauteur du capsule
         float targetHeight = isCrouching ? crouchHeight : normalHeight;
         capsule.height = Mathf.Lerp(capsule.height, targetHeight, Time.deltaTime * crouchTransitionSpeed);
         capsule.center = new Vector3(0, capsule.height / 2f, 0);
 
-        // Transition smooth de la caméra
         float targetCamY = isCrouching ? crouchHeight - 0.2f : normalHeight - 0.3f;
         Vector3 camPos = cam.transform.localPosition;
         camPos.y = Mathf.Lerp(camPos.y, targetCamY, Time.deltaTime * crouchTransitionSpeed);
@@ -215,7 +218,6 @@ public class PlayerController : MonoBehaviour
 
     bool CanStandUp()
     {
-        // Vérifie s'il y a de la place au-dessus pour se relever
         float checkDistance = normalHeight - capsule.height;
         Vector3 origin = transform.position + Vector3.up * capsule.height;
         return !Physics.Raycast(origin, Vector3.up, checkDistance + 0.1f);
