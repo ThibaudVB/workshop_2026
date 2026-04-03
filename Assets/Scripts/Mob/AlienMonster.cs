@@ -7,25 +7,32 @@ public class AlienMonster : MonoBehaviour
     public Transform player;
     public float detectionRange = 15f;
     public float screamRange = 1.5f;
-    public float randomMoveRadius = 5f;
-    public float randomMoveInterval = 3f;
+
+    [Header("Speeds")]
+    public float walkSpeed = 3f;
+    public float runSpeed = 10f;
+
+    [Header("Patrol Waypoints")]
+    public Transform[] waypoints;           // Les points de patrouille
+    public float waypointStopTime = 1f;     // Temps d'arrêt à chaque point
+    private int currentWaypointIndex = 0;
+    private bool isWaiting = false;
 
     [Header("Screamer Setup")]
-    public GameObject screamerScene;        // La scène entière du screamer
-    public GameObject screamerPanel;        // Le panel noir UI
-    public Animator screamerMonsterAnimator; // L'Animator du monstre dans la scène screamer
-    public string screamerAnimationTrigger = "Scream"; // Le trigger de l'animation screamer
+    public GameObject screamerScene;
+    public GameObject screamerPanel;
+    public Animator screamerMonsterAnimator;
+    public string screamerAnimationTrigger = "Scream";
     public AudioClip screamerSound;
     public float screamerDuration = 3f;
 
     [Header("Cameras")]
-    public Camera mainCamera;               // La caméra principale du joueur
-    public Camera screamerCamera;           // La caméra de la scène screamer
+    public Camera mainCamera;
+    public Camera screamerCamera;
 
     private NavMeshAgent agent;
     private AudioSource audioSource;
     private Animator animator;
-    private float timer;
     private bool hasScreamed = false;
     private bool isChasing = false;
     private Vector3 playerSpawnPoint;
@@ -40,17 +47,21 @@ public class AlienMonster : MonoBehaviour
         playerSpawnPoint = player.position;
         monsterSpawnPoint = transform.position;
 
-        // Trouver la main camera si pas assignée
         if (mainCamera == null)
             mainCamera = Camera.main;
 
-        // S'assurer que le screamer est désactivé au départ
         if (screamerScene != null)
             screamerScene.SetActive(false);
         if (screamerPanel != null)
             screamerPanel.SetActive(false);
         if (screamerCamera != null)
             screamerCamera.gameObject.SetActive(false);
+
+        // Aller au premier waypoint
+        if (waypoints.Length > 0)
+        {
+            agent.SetDestination(waypoints[0].position);
+        }
     }
 
     void Update()
@@ -59,7 +70,6 @@ public class AlienMonster : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Mettre à jour les animations
         UpdateAnimations();
 
         if (distanceToPlayer <= screamRange && !hasScreamed)
@@ -75,7 +85,7 @@ public class AlienMonster : MonoBehaviour
         }
         else
         {
-            WanderRandomly();
+            Patrol();
         }
     }
 
@@ -90,65 +100,68 @@ public class AlienMonster : MonoBehaviour
 
     void ChasePlayer()
     {
-        agent.speed = 30f;
+        agent.speed = runSpeed;
         agent.SetDestination(player.position);
         isChasing = true;
+        isWaiting = false;
+        StopCoroutine("WaitAtWaypoint");
     }
 
-    void WanderRandomly()
+    void Patrol()
     {
-        agent.speed = 1.5f;
+        if (waypoints.Length == 0) return;
+        if (isWaiting) return;
+
         isChasing = false;
-        timer += Time.deltaTime;
+        agent.speed = walkSpeed;
 
-        if (timer >= randomMoveInterval)
+        // Vérifie si on est arrivé au waypoint
+        if (!agent.pathPending && agent.remainingDistance < 0.5f)
         {
-            Vector3 randomPos = transform.position + Random.insideUnitSphere * randomMoveRadius;
-            NavMeshHit hit;
-
-            if (NavMesh.SamplePosition(randomPos, out hit, randomMoveRadius, NavMesh.AllAreas))
-            {
-                agent.SetDestination(hit.position);
-            }
-
-            timer = 0f;
+            StartCoroutine(WaitAtWaypoint());
         }
+    }
+
+    IEnumerator WaitAtWaypoint()
+    {
+        isWaiting = true;
+        
+        // Attendre au waypoint
+        yield return new WaitForSeconds(waypointStopTime);
+
+        // Passer au waypoint suivant
+        currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+        agent.SetDestination(waypoints[currentWaypointIndex].position);
+
+        isWaiting = false;
     }
 
     IEnumerator ScreamerSequence()
     {
-        // 1. Arrêter le monstre
         agent.isStopped = true;
         isChasing = false;
 
-        // 2. Désactiver la caméra principale
         if (mainCamera != null)
             mainCamera.gameObject.SetActive(false);
 
-        // 3. Activer le panel noir
         if (screamerPanel != null)
             screamerPanel.SetActive(true);
 
-        // 4. Activer la scène screamer + caméra
         if (screamerScene != null)
             screamerScene.SetActive(true);
         if (screamerCamera != null)
             screamerCamera.gameObject.SetActive(true);
 
-        // 5. Jouer l'animation du monstre screamer
         if (screamerMonsterAnimator != null)
         {
             screamerMonsterAnimator.SetTrigger(screamerAnimationTrigger);
         }
 
-        // 6. Jouer le son
         if (screamerSound != null && audioSource != null)
             audioSource.PlayOneShot(screamerSound);
 
-        // 7. Attendre la durée du screamer
         yield return new WaitForSeconds(screamerDuration);
 
-        // 8. Désactiver le screamer
         if (screamerScene != null)
             screamerScene.SetActive(false);
         if (screamerPanel != null)
@@ -156,11 +169,9 @@ public class AlienMonster : MonoBehaviour
         if (screamerCamera != null)
             screamerCamera.gameObject.SetActive(false);
 
-        // 9. Réactiver la caméra principale
         if (mainCamera != null)
             mainCamera.gameObject.SetActive(true);
 
-        // 10. Respawn joueur
         Rigidbody playerRb = player.GetComponent<Rigidbody>();
         if (playerRb != null)
         {
@@ -172,13 +183,16 @@ public class AlienMonster : MonoBehaviour
             player.position = playerSpawnPoint;
         }
 
-        // 11. Respawn monstre
         agent.enabled = false;
         transform.position = monsterSpawnPoint;
         agent.enabled = true;
         agent.isStopped = false;
 
-        // 12. Reset
+        // Reset waypoint au plus proche
+        currentWaypointIndex = GetClosestWaypointIndex();
+        if (waypoints.Length > 0)
+            agent.SetDestination(waypoints[currentWaypointIndex].position);
+
         hasScreamed = false;
         isChasing = false;
 
@@ -186,6 +200,47 @@ public class AlienMonster : MonoBehaviour
         {
             animator.SetFloat("Speed", 0f);
             animator.SetBool("IsChasing", false);
+        }
+    }
+
+    int GetClosestWaypointIndex()
+    {
+        int closest = 0;
+        float minDist = Mathf.Infinity;
+
+        for (int i = 0; i < waypoints.Length; i++)
+        {
+            float dist = Vector3.Distance(transform.position, waypoints[i].position);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closest = i;
+            }
+        }
+
+        return closest;
+    }
+
+    // Dessine les waypoints dans l'éditeur
+    void OnDrawGizmosSelected()
+    {
+        if (waypoints == null || waypoints.Length == 0) return;
+
+        Gizmos.color = Color.yellow;
+
+        for (int i = 0; i < waypoints.Length; i++)
+        {
+            if (waypoints[i] == null) continue;
+
+            // Dessine une sphère à chaque waypoint
+            Gizmos.DrawWireSphere(waypoints[i].position, 0.5f);
+
+            // Dessine une ligne vers le prochain waypoint
+            int next = (i + 1) % waypoints.Length;
+            if (waypoints[next] != null)
+            {
+                Gizmos.DrawLine(waypoints[i].position, waypoints[next].position);
+            }
         }
     }
 }
