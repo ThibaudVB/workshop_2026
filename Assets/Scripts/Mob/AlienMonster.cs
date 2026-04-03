@@ -13,8 +13,8 @@ public class AlienMonster : MonoBehaviour
     public float runSpeed = 10f;
 
     [Header("Patrol Waypoints")]
-    public Transform[] waypoints;           // Les points de patrouille
-    public float waypointStopTime = 1f;     // Temps d'arrêt à chaque point
+    public Transform[] waypoints;
+    public float waypointStopTime = 1f;
     private int currentWaypointIndex = 0;
     private bool isWaiting = false;
 
@@ -57,7 +57,6 @@ public class AlienMonster : MonoBehaviour
         if (screamerCamera != null)
             screamerCamera.gameObject.SetActive(false);
 
-        // Aller au premier waypoint
         if (waypoints.Length > 0)
         {
             agent.SetDestination(waypoints[0].position);
@@ -71,6 +70,18 @@ public class AlienMonster : MonoBehaviour
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
         UpdateAnimations();
+
+        // Si le joueur est caché → retourner en patrouille
+        if (LockerDoor.IsPlayerHiding)
+        {
+            if (isChasing)
+            {
+                // Le monstre perd le joueur, retourne patrouiller
+                isChasing = false;
+            }
+            Patrol();
+            return;
+        }
 
         if (distanceToPlayer <= screamRange && !hasScreamed)
         {
@@ -115,7 +126,6 @@ public class AlienMonster : MonoBehaviour
         isChasing = false;
         agent.speed = walkSpeed;
 
-        // Vérifie si on est arrivé au waypoint
         if (!agent.pathPending && agent.remainingDistance < 0.5f)
         {
             StartCoroutine(WaitAtWaypoint());
@@ -126,10 +136,8 @@ public class AlienMonster : MonoBehaviour
     {
         isWaiting = true;
         
-        // Attendre au waypoint
         yield return new WaitForSeconds(waypointStopTime);
 
-        // Passer au waypoint suivant
         currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
         agent.SetDestination(waypoints[currentWaypointIndex].position);
 
@@ -188,7 +196,6 @@ public class AlienMonster : MonoBehaviour
         agent.enabled = true;
         agent.isStopped = false;
 
-        // Reset waypoint au plus proche
         currentWaypointIndex = GetClosestWaypointIndex();
         if (waypoints.Length > 0)
             agent.SetDestination(waypoints[currentWaypointIndex].position);
@@ -221,7 +228,6 @@ public class AlienMonster : MonoBehaviour
         return closest;
     }
 
-    // Dessine les waypoints dans l'éditeur
     void OnDrawGizmosSelected()
     {
         if (waypoints == null || waypoints.Length == 0) return;
@@ -232,10 +238,8 @@ public class AlienMonster : MonoBehaviour
         {
             if (waypoints[i] == null) continue;
 
-            // Dessine une sphère à chaque waypoint
             Gizmos.DrawWireSphere(waypoints[i].position, 0.5f);
 
-            // Dessine une ligne vers le prochain waypoint
             int next = (i + 1) % waypoints.Length;
             if (waypoints[next] != null)
             {
