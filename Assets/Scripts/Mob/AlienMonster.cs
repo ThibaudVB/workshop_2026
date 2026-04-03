@@ -18,17 +18,12 @@ public class AlienMonster : MonoBehaviour
     private int currentWaypointIndex = 0;
     private bool isWaiting = false;
 
-    [Header("Screamer Setup")]
-    public GameObject screamerScene;
-    public GameObject screamerPanel;
-    public Animator screamerMonsterAnimator;
-    public string screamerAnimationTrigger = "Scream";
+    [Header("Screamer RE7")]
+    public MonoBehaviour playerController;
+    public Camera playerCamera;
+    public GameObject deathScreen;
+    public float cameraTurnSpeed = 3f;
     public AudioClip screamerSound;
-    public float screamerDuration = 3f;
-
-    [Header("Cameras")]
-    public Camera mainCamera;
-    public Camera screamerCamera;
 
     private NavMeshAgent agent;
     private AudioSource audioSource;
@@ -47,20 +42,14 @@ public class AlienMonster : MonoBehaviour
         playerSpawnPoint = player.position;
         monsterSpawnPoint = transform.position;
 
-        if (mainCamera == null)
-            mainCamera = Camera.main;
+        if (playerCamera == null)
+            playerCamera = Camera.main;
 
-        if (screamerScene != null)
-            screamerScene.SetActive(false);
-        if (screamerPanel != null)
-            screamerPanel.SetActive(false);
-        if (screamerCamera != null)
-            screamerCamera.gameObject.SetActive(false);
+        if (deathScreen != null)
+            deathScreen.SetActive(false);
 
         if (waypoints.Length > 0)
-        {
             agent.SetDestination(waypoints[0].position);
-        }
     }
 
     void Update()
@@ -71,14 +60,10 @@ public class AlienMonster : MonoBehaviour
 
         UpdateAnimations();
 
-        // Si le joueur est caché → retourner en patrouille
         if (LockerDoor.IsPlayerHiding)
         {
             if (isChasing)
-            {
-                // Le monstre perd le joueur, retourne patrouiller
                 isChasing = false;
-            }
             Patrol();
             return;
         }
@@ -91,13 +76,9 @@ public class AlienMonster : MonoBehaviour
         }
 
         if (distanceToPlayer < detectionRange)
-        {
             ChasePlayer();
-        }
         else
-        {
             Patrol();
-        }
     }
 
     void UpdateAnimations()
@@ -127,15 +108,13 @@ public class AlienMonster : MonoBehaviour
         agent.speed = walkSpeed;
 
         if (!agent.pathPending && agent.remainingDistance < 0.5f)
-        {
             StartCoroutine(WaitAtWaypoint());
-        }
     }
 
     IEnumerator WaitAtWaypoint()
     {
         isWaiting = true;
-        
+
         yield return new WaitForSeconds(waypointStopTime);
 
         currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
@@ -146,68 +125,82 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
+        // Stop le monstre
         agent.isStopped = true;
         isChasing = false;
 
-        if (mainCamera != null)
-            mainCamera.gameObject.SetActive(false);
+        // Désactive les contrôles joueur
+        if (playerController != null)
+            playerController.enabled = false;
 
-        if (screamerPanel != null)
-            screamerPanel.SetActive(true);
-
-        if (screamerScene != null)
-            screamerScene.SetActive(true);
-        if (screamerCamera != null)
-            screamerCamera.gameObject.SetActive(true);
-
-        if (screamerMonsterAnimator != null)
-        {
-            screamerMonsterAnimator.SetTrigger(screamerAnimationTrigger);
-        }
-
+        // Son
         if (screamerSound != null && audioSource != null)
             audioSource.PlayOneShot(screamerSound);
 
-        yield return new WaitForSeconds(screamerDuration);
+        // 1. Tourne la caméra vers le monstre
+        yield return StartCoroutine(TurnCameraToMonster());
 
-        if (screamerScene != null)
-            screamerScene.SetActive(false);
-        if (screamerPanel != null)
-            screamerPanel.SetActive(false);
-        if (screamerCamera != null)
-            screamerCamera.gameObject.SetActive(false);
-
-        if (mainCamera != null)
-            mainCamera.gameObject.SetActive(true);
-
-        Rigidbody playerRb = player.GetComponent<Rigidbody>();
-        if (playerRb != null)
-        {
-            playerRb.linearVelocity = Vector3.zero;
-            playerRb.position = playerSpawnPoint;
-        }
-        else
-        {
-            player.position = playerSpawnPoint;
-        }
-
-        agent.enabled = false;
-        transform.position = monsterSpawnPoint;
-        agent.enabled = true;
-        agent.isStopped = false;
-
-        currentWaypointIndex = GetClosestWaypointIndex();
-        if (waypoints.Length > 0)
-            agent.SetDestination(waypoints[currentWaypointIndex].position);
-
-        hasScreamed = false;
-        isChasing = false;
-
+        // 2. Lance l'anim du monstre
         if (animator != null)
+            animator.SetTrigger("Grab");
+
+        // 3. Shake
+        yield return StartCoroutine(CameraShake(0.4f, 0.15f));
+
+        // 4. Chute caméra
+        yield return StartCoroutine(FallCamera());
+
+        // 5. Écran de mort
+        if (deathScreen != null)
+            deathScreen.SetActive(true);
+    }
+
+    IEnumerator TurnCameraToMonster()
+    {
+        Quaternion startRot = playerCamera.transform.rotation;
+        Vector3 dir = transform.position - playerCamera.transform.position;
+        Quaternion targetRot = Quaternion.LookRotation(dir);
+
+        float elapsed = 0f;
+        while (elapsed < 1f)
         {
-            animator.SetFloat("Speed", 0f);
-            animator.SetBool("IsChasing", false);
+            elapsed += Time.deltaTime * cameraTurnSpeed;
+            playerCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, elapsed);
+            yield return null;
         }
+    }
+
+    IEnumerator FallCamera()
+    {
+        Vector3 startPos = playerCamera.transform.localPosition;
+        Quaternion startRot = playerCamera.transform.localRotation;
+        Vector3 endPos = new Vector3(startPos.x, -0.5f, startPos.z);
+        Quaternion endRot = Quaternion.Euler(60f, startRot.eulerAngles.y, 15f);
+
+        float elapsed = 0f;
+        while (elapsed < 1f)
+        {
+            elapsed += Time.deltaTime * 0.8f;
+            playerCamera.transform.localPosition = Vector3.Lerp(startPos, endPos, elapsed);
+            playerCamera.transform.localRotation = Quaternion.Slerp(startRot, endRot, elapsed);
+            yield return null;
+        }
+    }
+
+    IEnumerator CameraShake(float duration, float magnitude)
+    {
+        Vector3 originalPos = playerCamera.transform.localPosition;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            playerCamera.transform.localPosition = originalPos +
+                new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0) * magnitude;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        playerCamera.transform.localPosition = originalPos;
     }
 
     int GetClosestWaypointIndex()
@@ -242,9 +235,7 @@ public class AlienMonster : MonoBehaviour
 
             int next = (i + 1) % waypoints.Length;
             if (waypoints[next] != null)
-            {
                 Gizmos.DrawLine(waypoints[i].position, waypoints[next].position);
-            }
         }
     }
 }
