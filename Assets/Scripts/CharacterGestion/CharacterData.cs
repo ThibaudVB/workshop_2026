@@ -17,4 +17,8 @@ public class CharacterData : ScriptableObject
     [Header("Ajustements")]
     [Tooltip("Décalage Y pour que les pieds touchent le sol")]
     public float yOffset = -1f;
+
+    [Header("Caméra")]
+    [Tooltip("Position locale de la caméra (X = côté, Y = hauteur, Z = recul négatif pour reculer)")]
+    public Vector3 cameraOffset = new Vector3(0f, 1.7f, 0f);
 }

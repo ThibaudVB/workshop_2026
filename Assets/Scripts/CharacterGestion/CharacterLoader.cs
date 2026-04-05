@@ -14,7 +14,6 @@ public class CharacterLoader : MonoBehaviour
 
     void Start()
     {
-        // Récupère le choix du joueur, ou le perso par défaut
         CharacterData chosen = CharacterSelector.SelectedCharacter;
         if (chosen == null)
             chosen = defaultCharacter;
@@ -30,14 +29,11 @@ public class CharacterLoader : MonoBehaviour
 
     void SpawnCharacter(CharacterData data)
     {
-        // Supprime l'ancien modèle s'il y en a un
         if (currentModel != null)
             Destroy(currentModel);
 
         // Instancie le modèle comme enfant du Player
         currentModel = Instantiate(data.modelPrefab, transform);
-
-        // Positionne correctement (pieds au sol)
         currentModel.transform.localPosition = new Vector3(0f, data.yOffset, 0f);
         currentModel.transform.localRotation = Quaternion.identity;
 
@@ -45,21 +41,31 @@ public class CharacterLoader : MonoBehaviour
         Animator anim = currentModel.GetComponent<Animator>();
         if (anim != null)
         {
-            // Utilise l'override si dispo, sinon le controller de base
             if (data.animatorOverride != null)
                 anim.runtimeAnimatorController = data.animatorOverride;
             else
                 anim.runtimeAnimatorController = baseAnimatorController;
 
-            // IMPORTANT : pas de Root Motion
             anim.applyRootMotion = false;
         }
 
-        // Configure le bridge (le script qui envoie Speed et Direction)
+        // Configure le bridge
         PlayerAnimatorBridge bridge = currentModel.GetComponent<PlayerAnimatorBridge>();
         if (bridge == null)
             bridge = currentModel.AddComponent<PlayerAnimatorBridge>();
 
         bridge.playerRb = GetComponent<Rigidbody>();
+
+        // Ajuste la caméra pour ce personnage
+        Camera cam = GetComponentInChildren<Camera>();
+        if (cam != null)
+        {
+            // Ajoute ou récupère le script CameraOffset sur la caméra
+            CameraOffset camOffset = cam.GetComponent<CameraOffset>();
+            if (camOffset == null)
+                camOffset = cam.gameObject.AddComponent<CameraOffset>();
+
+            camOffset.offset = data.cameraOffset;
+        }
     }
 }

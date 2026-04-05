@@ -16,3 +16,4 @@ MonoBehaviour:
   modelPrefab: {fileID: 7945237577867740566, guid: 3e72f909783287543a2dfb33e4f21302, type: 3}
   animatorOverride: {fileID: 22100000, guid: 0ab8004eef375ba48b08a6009ca273dc, type: 2}
   yOffset: -0.09
+  cameraOffset: {x: 0, y: 0, z: 0.3}

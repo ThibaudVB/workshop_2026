@@ -11,6 +11,10 @@ public class CharacterSelector : MonoBehaviour
     [Tooltip("L'endroit où le modèle preview apparaît dans la scène de sélection")]
     public Transform previewSpawnPoint;
 
+    [Header("UI")]
+    [Tooltip("Le texte qui affiche le nom du personnage")]
+    public TMPro.TextMeshProUGUI characterNameText;
+
     [Header("Scène de jeu")]
     public string gameSceneName = "GameScene";
 
@@ -72,5 +76,7 @@ public class CharacterSelector : MonoBehaviour
                 anim.runtimeAnimatorController = data.animatorOverride;
             }
         }
+        if (characterNameText != null)
+    characterNameText.text = data.characterName;
     }
 }
