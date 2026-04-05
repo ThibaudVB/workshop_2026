@@ -1,9 +1,13 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class AlienMonster : MonoBehaviour
 {
+    public static bool IsDead = false;
+
     public Transform player;
     public float detectionRange = 15f;
     public float screamRange = 1.5f;
@@ -25,6 +29,9 @@ public class AlienMonster : MonoBehaviour
     public float cameraTurnSpeed = 3f;
     public AudioClip screamerSound;
 
+    [Header("Post Processing")]
+    public Volume postProcessVolume;
+
     private NavMeshAgent agent;
     private AudioSource audioSource;
     private Animator animator;
@@ -33,8 +40,14 @@ public class AlienMonster : MonoBehaviour
     private Vector3 playerSpawnPoint;
     private Vector3 monsterSpawnPoint;
 
+    private bool isCameraFrozen = false;
+    private Vector3 frozenCameraPos;
+    private Quaternion frozenCameraRot;
+    private Vector3 frozenPlayerPos;
+
     void Start()
     {
+        IsDead = false;
         agent = GetComponent<NavMeshAgent>();
         audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
@@ -54,6 +67,8 @@ public class AlienMonster : MonoBehaviour
 
     void Update()
     {
+        if (IsDead) return;
+
         if (!agent.isOnNavMesh) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -81,10 +96,19 @@ public class AlienMonster : MonoBehaviour
             Patrol();
     }
 
+    void LateUpdate()
+    {
+        if (isCameraFrozen)
+        {
+            player.position = frozenPlayerPos;
+            playerCamera.transform.localPosition = frozenCameraPos;
+            playerCamera.transform.localRotation = frozenCameraRot;
+        }
+    }
+
     void UpdateAnimations()
     {
         if (animator == null) return;
-
         float speed = agent.velocity.magnitude;
         animator.SetFloat("Speed", speed);
         animator.SetBool("IsChasing", isChasing);
@@ -114,58 +138,88 @@ public class AlienMonster : MonoBehaviour
     IEnumerator WaitAtWaypoint()
     {
         isWaiting = true;
-
         yield return new WaitForSeconds(waypointStopTime);
-
         currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
         agent.SetDestination(waypoints[currentWaypointIndex].position);
-
         isWaiting = false;
     }
 
     IEnumerator ScreamerSequence()
     {
-        // Stop le monstre
+        // Désactive le Depth of Field
+        if (postProcessVolume != null)
+        {
+            if (postProcessVolume.profile.TryGet<DepthOfField>(out var dof))
+                dof.active = false;
+        }
+
+        // Éteint la flashlight
+        foreach (Light l in playerCamera.GetComponentsInChildren<Light>())
+            l.enabled = false;
+
         agent.isStopped = true;
         isChasing = false;
+        IsDead = true;
 
-        // Désactive les contrôles joueur
-        if (playerController != null)
-            playerController.enabled = false;
+        Rigidbody rb = playerController.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
 
-        // Son
         if (screamerSound != null && audioSource != null)
             audioSource.PlayOneShot(screamerSound);
 
-        // 1. Tourne la caméra vers le monstre
+        // 1. Tourne vers le monstre
         yield return StartCoroutine(TurnCameraToMonster());
 
-        // 2. Lance l'anim du monstre
+        // 2. Lance l'anim
         if (animator != null)
             animator.SetTrigger("Grab");
 
-        // 3. Shake
+        // 3. Lève la caméra pour voir le monstre
+        yield return StartCoroutine(LookUpAtMonster());
+
+        // 4. Shake
         yield return StartCoroutine(CameraShake(0.4f, 0.15f));
 
-        // 4. Chute caméra
+        // 5. Tombe
         yield return StartCoroutine(FallCamera());
 
-        // 5. Écran de mort
+        // 6. Écran de mort
         if (deathScreen != null)
             deathScreen.SetActive(true);
     }
 
     IEnumerator TurnCameraToMonster()
     {
-        Quaternion startRot = playerCamera.transform.rotation;
         Vector3 dir = transform.position - playerCamera.transform.position;
-        Quaternion targetRot = Quaternion.LookRotation(dir);
+        Quaternion worldTarget = Quaternion.LookRotation(dir);
+
+        Quaternion localStart = playerCamera.transform.localRotation;
+        Quaternion localTarget = Quaternion.Inverse(playerCamera.transform.parent.rotation) * worldTarget;
 
         float elapsed = 0f;
         while (elapsed < 1f)
         {
             elapsed += Time.deltaTime * cameraTurnSpeed;
-            playerCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, elapsed);
+            playerCamera.transform.localRotation = Quaternion.Slerp(localStart, localTarget, elapsed);
+            yield return null;
+        }
+    }
+
+    IEnumerator LookUpAtMonster()
+    {
+        Quaternion startRot = playerCamera.transform.localRotation;
+        Quaternion targetRot = Quaternion.Euler(-20f, startRot.eulerAngles.y, 0f);
+
+        float elapsed = 0f;
+        while (elapsed < 1f)
+        {
+            elapsed += Time.deltaTime * 2f;
+            playerCamera.transform.localRotation = Quaternion.Slerp(startRot, targetRot, elapsed);
             yield return null;
         }
     }
@@ -174,17 +228,29 @@ public class AlienMonster : MonoBehaviour
     {
         Vector3 startPos = playerCamera.transform.localPosition;
         Quaternion startRot = playerCamera.transform.localRotation;
-        Vector3 endPos = new Vector3(startPos.x, -0.5f, startPos.z);
-        Quaternion endRot = Quaternion.Euler(60f, startRot.eulerAngles.y, 15f);
+        Vector3 endPos = new Vector3(startPos.x, 0.2f, startPos.z);
+        Quaternion endRot = Quaternion.Euler(-80f, startRot.eulerAngles.y, 0f);
+
+        yield return new WaitForSeconds(1f);
 
         float elapsed = 0f;
         while (elapsed < 1f)
         {
             elapsed += Time.deltaTime * 0.8f;
-            playerCamera.transform.localPosition = Vector3.Lerp(startPos, endPos, elapsed);
-            playerCamera.transform.localRotation = Quaternion.Slerp(startRot, endRot, elapsed);
+            float smoothT = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed));
+            playerCamera.transform.localPosition = Vector3.Lerp(startPos, endPos, smoothT);
+            playerCamera.transform.localRotation = Quaternion.Slerp(startRot, endRot, smoothT);
             yield return null;
         }
+
+        // Force la position finale
+        playerCamera.transform.localPosition = endPos;
+        playerCamera.transform.localRotation = endRot;
+
+        frozenCameraPos = endPos;
+        frozenCameraRot = endRot;
+        frozenPlayerPos = player.position;
+        isCameraFrozen = true;
     }
 
     IEnumerator CameraShake(float duration, float magnitude)
@@ -217,7 +283,6 @@ public class AlienMonster : MonoBehaviour
                 closest = i;
             }
         }
-
         return closest;
     }
 
@@ -230,9 +295,7 @@ public class AlienMonster : MonoBehaviour
         for (int i = 0; i < waypoints.Length; i++)
         {
             if (waypoints[i] == null) continue;
-
             Gizmos.DrawWireSphere(waypoints[i].position, 0.5f);
-
             int next = (i + 1) % waypoints.Length;
             if (waypoints[next] != null)
                 Gizmos.DrawLine(waypoints[i].position, waypoints[next].position);
