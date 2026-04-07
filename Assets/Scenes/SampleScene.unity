@@ -17967,7 +17967,10 @@ MonoBehaviour:
       suis ni mes affaires sur le drone et j'arrive t'aider."
     delayAfter: 0
   - clip: {fileID: 8300000, guid: c33c262492912ab4a8315c397c3ce585, type: 3}
-    subtitle: 'Carl : Ca peut aller gnagnagna'
+    subtitle: "\xC7a peut aller, de tout fa\xE7on on n\u2019a pas le choix, y a que
+      nous qui bossons ici. Depuis notre r\xE9veil apr\xE8s les 44 ans de stase,
+      les scientifiques n'en branlent pas une. Ils attendent b\xEAtement l\u2019arriv\xE9e
+      sur Oasis pour se mettre \xE0 bosser."
     delayAfter: 1
   - clip: {fileID: 8300000, guid: a53d08a1a89de684bbddc04fed862d86, type: 3}
     subtitle: "TOI : C'est clair, m\xEAme en 2246 les humains resteront toujours
@@ -17977,11 +17980,16 @@ MonoBehaviour:
       la pression, hein\n"
     delayAfter: 1
   - clip: {fileID: 8300000, guid: 4ce44df0155c04a4dad6c5dd1a1fe445, type: 3}
-    subtitle: 'Carl : gnagnagna'
+    subtitle: "C\u2019est clair, m\xEAme en 2246 les humains restent toujours des
+      branleurs alors qu\u2019on s\u2019approche de la fin du monde. On a tellement
+      pollu\xE9 la Terre qu\u2019on se retrouve \xE0 faire un voyage de 45 ans vers
+      une nouvelle plan\xE8te pour sauver l\u2019humanit\xE9. Mais bon, \xE0 part
+      \xE7a, on n\u2019a pas trop la pression (rires)."
     delayAfter: 1
   - clip: {fileID: 8300000, guid: 3734bb33c2d12b245883ad57fc7d2bdc, type: 3}
-    subtitle: 'TOI : gnagnagna z''avez qu''a mettre le script des voiceline sur le
-      drive.'
+    subtitle: "C\u2019est vrai tu as raison, mais pour v\xE9rifier si la plan\xE8te
+      est habitable il faudrait d\xE9j\xE0 que le vaisseau ne se d\xE9truise pas
+      dans l\u2019espace. "
     delayAfter: 2
   afterBlackoutVoiceLines:
   - clip: {fileID: 8300000, guid: 26e9da3455aadd3489cb47b9b225252b, type: 3}
