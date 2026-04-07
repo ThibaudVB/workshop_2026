@@ -5,11 +5,12 @@ TagManager:
   serializedVersion: 3
   tags:
   - Sphere
+  - FlashLight
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - ObjectifPing
   - Water
   - UI
   - Player
