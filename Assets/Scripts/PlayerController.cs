@@ -30,6 +30,8 @@ public class PlayerController : MonoBehaviour
     public float crouchStepInterval = 0.7f;
     public float footstepVolume = 0.5f;
 
+    public static bool cinematicMode = false;
+
     private Rigidbody rb;
     private Camera cam;
     private float xRotation = 0f;
@@ -65,8 +67,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // Stop tout si mort
-        if (AlienMonster.IsDead) return;
+        if (AlienMonster.IsDead || cinematicMode) return;
 
         ReadInput();
         LookAround();
@@ -78,8 +79,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Stop tout si mort
-        if (AlienMonster.IsDead) return;
+        if (AlienMonster.IsDead || cinematicMode) return;
         Move();
     }
 

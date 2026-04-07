@@ -7,6 +7,7 @@ using UnityEngine.Rendering.Universal;
 public class AlienMonster : MonoBehaviour
 {
     public static bool IsDead = false;
+    public static bool cinematicMode = false;
 
     public Transform player;
     public float detectionRange = 15f;
@@ -67,7 +68,7 @@ public class AlienMonster : MonoBehaviour
 
     void Update()
     {
-        if (IsDead) return;
+        if (IsDead || cinematicMode) return;
 
         if (!agent.isOnNavMesh) return;
 
@@ -146,14 +147,12 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
-        // Désactive le Depth of Field
         if (postProcessVolume != null)
         {
             if (postProcessVolume.profile.TryGet<DepthOfField>(out var dof))
                 dof.active = false;
         }
 
-        // Éteint la flashlight
         foreach (Light l in playerCamera.GetComponentsInChildren<Light>())
             l.enabled = false;
 
@@ -172,23 +171,15 @@ public class AlienMonster : MonoBehaviour
         if (screamerSound != null && audioSource != null)
             audioSource.PlayOneShot(screamerSound);
 
-        // 1. Tourne vers le monstre
         yield return StartCoroutine(TurnCameraToMonster());
 
-        // 2. Lance l'anim
         if (animator != null)
             animator.SetTrigger("Grab");
 
-        // 3. Lève la caméra pour voir le monstre
         yield return StartCoroutine(LookUpAtMonster());
-
-        // 4. Shake
         yield return StartCoroutine(CameraShake(0.4f, 0.15f));
-
-        // 5. Tombe
         yield return StartCoroutine(FallCamera());
 
-        // 6. Écran de mort
         if (deathScreen != null)
             deathScreen.SetActive(true);
     }
@@ -243,7 +234,6 @@ public class AlienMonster : MonoBehaviour
             yield return null;
         }
 
-        // Force la position finale
         playerCamera.transform.localPosition = endPos;
         playerCamera.transform.localRotation = endRot;
 
@@ -267,23 +257,6 @@ public class AlienMonster : MonoBehaviour
         }
 
         playerCamera.transform.localPosition = originalPos;
-    }
-
-    int GetClosestWaypointIndex()
-    {
-        int closest = 0;
-        float minDist = Mathf.Infinity;
-
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            float dist = Vector3.Distance(transform.position, waypoints[i].position);
-            if (dist < minDist)
-            {
-                minDist = dist;
-                closest = i;
-            }
-        }
-        return closest;
     }
 
     void OnDrawGizmosSelected()

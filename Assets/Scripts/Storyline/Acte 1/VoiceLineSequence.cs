@@ -19,6 +19,7 @@ public class VoiceLineSequence : MonoBehaviour
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+        if (StorylineManager.DebugMode) return;
         StartCoroutine(PlaySequence());
     }
 

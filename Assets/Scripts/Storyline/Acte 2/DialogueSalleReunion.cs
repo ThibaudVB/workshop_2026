@@ -17,7 +17,7 @@ public class DialogueSalleReunion : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && !triggered)
+        if (other.CompareTag("Player") && !triggered && !PickupSeringue.seringueCollected)
         {
             triggered = true;
             ObjectifManager.Instance.DesactiverTout();
@@ -36,5 +36,6 @@ public class DialogueSalleReunion : MonoBehaviour
         }
 
         SubtitleManager.Instance.HideSubtitle();
+        ObjectifManager.Instance.ActiverObjectif(2);
     }
 }
