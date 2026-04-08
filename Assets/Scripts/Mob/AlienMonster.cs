@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.InputSystem;
 
 public class AlienMonster : MonoBehaviour
 {
@@ -10,8 +9,17 @@ public class AlienMonster : MonoBehaviour
     public static bool cinematicMode = false;
 
     public Transform player;
-    public float detectionRange = 15f;
     public float screamRange = 1.5f;
+
+    [Header("Détection FOV")]
+    public float fovAngle = 120f;
+    public float fovRange = 15f;
+    public LayerMask obstacleMask;
+
+    [Header("Détection Son")]
+    public float soundRangeWalk = 5f;
+    public float soundRangeRun = 12f;
+    public float soundRangeCrouch = 0f;
 
     [Header("Speeds")]
     public float walkSpeed = 3f;
@@ -30,31 +38,24 @@ public class AlienMonster : MonoBehaviour
     public float cameraTurnSpeed = 3f;
     public AudioClip screamerSound;
 
-    [Header("Post Processing")]
-    public Volume postProcessVolume;
-
     private NavMeshAgent agent;
     private AudioSource audioSource;
     private Animator animator;
     private bool hasScreamed = false;
     private bool isChasing = false;
-    private Vector3 playerSpawnPoint;
-    private Vector3 monsterSpawnPoint;
 
     private bool isCameraFrozen = false;
     private Vector3 frozenCameraPos;
     private Quaternion frozenCameraRot;
     private Vector3 frozenPlayerPos;
 
-    void Start()
+    IEnumerator Start()
     {
         IsDead = false;
         agent = GetComponent<NavMeshAgent>();
         audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
         player = GameObject.FindWithTag("Player").transform;
-        playerSpawnPoint = player.position;
-        monsterSpawnPoint = transform.position;
 
         if (playerCamera == null)
             playerCamera = Camera.main;
@@ -62,14 +63,15 @@ public class AlienMonster : MonoBehaviour
         if (deathScreen != null)
             deathScreen.SetActive(false);
 
-        if (waypoints.Length > 0)
+        yield return null;
+
+        if (agent.isOnNavMesh && waypoints.Length > 0)
             agent.SetDestination(waypoints[0].position);
     }
 
     void Update()
     {
         if (IsDead || cinematicMode) return;
-
         if (!agent.isOnNavMesh) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -78,8 +80,7 @@ public class AlienMonster : MonoBehaviour
 
         if (LockerDoor.IsPlayerHiding)
         {
-            if (isChasing)
-                isChasing = false;
+            if (isChasing) isChasing = false;
             Patrol();
             return;
         }
@@ -91,10 +92,43 @@ public class AlienMonster : MonoBehaviour
             return;
         }
 
-        if (distanceToPlayer < detectionRange)
+        if (CanDetectPlayer())
             ChasePlayer();
-        else
+        else if (!isChasing)
             Patrol();
+        else
+        {
+            if (agent.remainingDistance < 0.5f)
+            {
+                isChasing = false;
+                Patrol();
+            }
+        }
+    }
+
+    bool CanDetectPlayer()
+    {
+        float distance = Vector3.Distance(transform.position, player.position);
+
+        Vector3 dirToPlayer = (player.position - transform.position).normalized;
+        float angle = Vector3.Angle(transform.forward, dirToPlayer);
+
+        if (angle < fovAngle / 2f && distance < fovRange)
+        {
+            if (!Physics.Raycast(transform.position + Vector3.up, dirToPlayer, distance, obstacleMask))
+                return true;
+        }
+
+        bool isRunning = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+        bool isCrouching = Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed;
+
+        float soundRange = isCrouching ? soundRangeCrouch :
+                           isRunning ? soundRangeRun : soundRangeWalk;
+
+        if (distance < soundRange)
+            return true;
+
+        return false;
     }
 
     void LateUpdate()
@@ -147,12 +181,6 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
-        if (postProcessVolume != null)
-        {
-            if (postProcessVolume.profile.TryGet<DepthOfField>(out var dof))
-                dof.active = false;
-        }
-
         foreach (Light l in playerCamera.GetComponentsInChildren<Light>())
             l.enabled = false;
 
@@ -264,7 +292,6 @@ public class AlienMonster : MonoBehaviour
         if (waypoints == null || waypoints.Length == 0) return;
 
         Gizmos.color = Color.yellow;
-
         for (int i = 0; i < waypoints.Length; i++)
         {
             if (waypoints[i] == null) continue;
@@ -273,5 +300,12 @@ public class AlienMonster : MonoBehaviour
             if (waypoints[next] != null)
                 Gizmos.DrawLine(waypoints[i].position, waypoints[next].position);
         }
+
+        Gizmos.color = Color.red;
+        Vector3 fovLeft = Quaternion.Euler(0, -fovAngle / 2f, 0) * transform.forward * fovRange;
+        Vector3 fovRight = Quaternion.Euler(0, fovAngle / 2f, 0) * transform.forward * fovRange;
+        Gizmos.DrawRay(transform.position, fovLeft);
+        Gizmos.DrawRay(transform.position, fovRight);
+        Gizmos.DrawRay(transform.position, transform.forward * fovRange);
     }
 }

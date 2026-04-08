@@ -63,15 +63,23 @@ public class StorylineManager : MonoBehaviour
                 TriggerSalleReunionCarl.carlDecouvert = true;
                 AlienMonster.cinematicMode = false;
                 ObjectifManager.Instance.ActiverObjectif(5);
+                AutoDestructionManager.Instance.StartCountdown();
                 break;
         }
+    }
+
+    [System.Serializable]
+    public class SubtitleLine
+    {
+        [TextArea] public string text;
+        public float showAtTime;
     }
 
     [System.Serializable]
     public class VoiceLine
     {
         public AudioClip clip;
-        [TextArea] public string subtitle;
+        public SubtitleLine[] subtitles;
         public float delayAfter;
     }
 
@@ -86,11 +94,30 @@ public class StorylineManager : MonoBehaviour
         {
             audioSource.clip = line.clip;
             audioSource.Play();
-            SubtitleManager.Instance.ShowSubtitle(line.subtitle);
+            StartCoroutine(PlaySubtitles(line.subtitles, line.clip.length));
             yield return new WaitForSeconds(line.clip.length + line.delayAfter);
         }
 
         SubtitleManager.Instance.HideSubtitle();
         onComplete?.Invoke();
+    }
+
+    private IEnumerator PlaySubtitles(SubtitleLine[] subtitles, float clipDuration)
+    {
+        if (subtitles == null || subtitles.Length == 0) yield break;
+
+        float elapsed = 0f;
+        int index = 0;
+
+        while (elapsed < clipDuration)
+        {
+            if (index < subtitles.Length && elapsed >= subtitles[index].showAtTime)
+            {
+                SubtitleManager.Instance.ShowSubtitle(subtitles[index].text);
+                index++;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 }

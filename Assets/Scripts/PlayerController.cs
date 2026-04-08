@@ -30,7 +30,18 @@ public class PlayerController : MonoBehaviour
     public float crouchStepInterval = 0.7f;
     public float footstepVolume = 0.5f;
 
-    public static bool cinematicMode = false;
+    public static bool blockMovement = false;
+    public static bool blockCamera = false;
+
+    public static bool cinematicMode
+    {
+        get => blockMovement && blockCamera;
+        set
+        {
+            blockMovement = value;
+            blockCamera = value;
+        }
+    }
 
     private Rigidbody rb;
     private Camera cam;
@@ -67,19 +78,24 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (AlienMonster.IsDead || cinematicMode) return;
+        if (AlienMonster.IsDead) return;
 
-        ReadInput();
-        LookAround();
-        HandleCrouch();
-        HandleJump();
-        HandleFootsteps();
-        HandleStamina();
+        if (!blockCamera)
+            LookAround();
+
+        if (!blockMovement)
+        {
+            ReadInput();
+            HandleCrouch();
+            HandleJump();
+            HandleFootsteps();
+            HandleStamina();
+        }
     }
 
     void FixedUpdate()
     {
-        if (AlienMonster.IsDead || cinematicMode) return;
+        if (AlienMonster.IsDead || blockMovement) return;
         Move();
     }
 
@@ -100,7 +116,9 @@ public class PlayerController : MonoBehaviour
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -80f, 80f);
         cam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
+
+        if (!blockMovement)
+            transform.Rotate(Vector3.up * mouseX);
     }
 
     void Move()

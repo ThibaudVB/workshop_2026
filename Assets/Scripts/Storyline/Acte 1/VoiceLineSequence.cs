@@ -7,7 +7,7 @@ public class VoiceLineSequence : MonoBehaviour
     public class VoiceLine
     {
         public AudioClip clip;
-        [TextArea] public string subtitle;
+        public StorylineManager.SubtitleLine[] subtitles;
         public float delayAfter;
     }
 
@@ -15,11 +15,18 @@ public class VoiceLineSequence : MonoBehaviour
     [SerializeField] private VoiceLine[] afterBlackoutVoiceLines;
     [SerializeField] private AudioClip blackoutSound;
     private AudioSource audioSource;
+    private Animator playerAnimator;
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+        playerAnimator = GameObject.FindWithTag("Player").GetComponentInChildren<Animator>();
+
         if (StorylineManager.DebugMode) return;
+
+        PlayerController.blockMovement = true;
+        playerAnimator.SetBool("SitDown", true);
+
         StartCoroutine(PlaySequence());
     }
 
@@ -29,7 +36,7 @@ public class VoiceLineSequence : MonoBehaviour
         {
             audioSource.clip = line.clip;
             audioSource.Play();
-            SubtitleManager.Instance.ShowSubtitle(line.subtitle);
+            StartCoroutine(PlaySubtitles(line.subtitles, line.clip.length));
             yield return new WaitForSeconds(line.clip.length + line.delayAfter);
         }
 
@@ -54,6 +61,9 @@ public class VoiceLineSequence : MonoBehaviour
                 l.enabled = false;
         }
 
+        playerAnimator.SetBool("SitDown", false);
+        PlayerController.blockMovement = false;
+
         ObjectifManager.Instance.ActiverObjectif(0);
         StartCoroutine(PlayAfterBlackout());
     }
@@ -64,10 +74,29 @@ public class VoiceLineSequence : MonoBehaviour
         {
             audioSource.clip = line.clip;
             audioSource.Play();
-            SubtitleManager.Instance.ShowSubtitle(line.subtitle);
+            StartCoroutine(PlaySubtitles(line.subtitles, line.clip.length));
             yield return new WaitForSeconds(line.clip.length + line.delayAfter);
         }
 
         SubtitleManager.Instance.HideSubtitle();
+    }
+
+    private IEnumerator PlaySubtitles(StorylineManager.SubtitleLine[] subtitles, float clipDuration)
+    {
+        if (subtitles == null || subtitles.Length == 0) yield break;
+
+        float elapsed = 0f;
+        int index = 0;
+
+        while (elapsed < clipDuration)
+        {
+            if (index < subtitles.Length && elapsed >= subtitles[index].showAtTime)
+            {
+                SubtitleManager.Instance.ShowSubtitle(subtitles[index].text);
+                index++;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 }

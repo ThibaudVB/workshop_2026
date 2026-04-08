@@ -35,7 +35,7 @@ public class MiniJeuMaintenance : MonoBehaviour
     public class VoiceLine
     {
         public AudioClip clip;
-        [TextArea] public string subtitle;
+        public StorylineManager.SubtitleLine[] subtitles;
         public float delayAfter;
     }
     [SerializeField] private VoiceLine[] voiceLines;
@@ -238,13 +238,32 @@ public class MiniJeuMaintenance : MonoBehaviour
         {
             audioSource.clip = line.clip;
             audioSource.Play();
-            SubtitleManager.Instance.ShowSubtitle(line.subtitle);
+            StartCoroutine(PlaySubtitles(line.subtitles, line.clip.length));
             yield return new WaitForSeconds(line.clip.length + line.delayAfter);
         }
 
         SubtitleManager.Instance.HideSubtitle();
         ObjectifManager.Instance.ActiverObjectif(1);
         onMinijeuCompleted.Invoke();
+    }
+
+    private IEnumerator PlaySubtitles(StorylineManager.SubtitleLine[] subtitles, float clipDuration)
+    {
+        if (subtitles == null || subtitles.Length == 0) yield break;
+
+        float elapsed = 0f;
+        int index = 0;
+
+        while (elapsed < clipDuration)
+        {
+            if (index < subtitles.Length && elapsed >= subtitles[index].showAtTime)
+            {
+                SubtitleManager.Instance.ShowSubtitle(subtitles[index].text);
+                index++;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 
     void QTEFail()

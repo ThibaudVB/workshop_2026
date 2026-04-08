@@ -38,22 +38,30 @@ public class AutoDestructionManager : MonoBehaviour
 
     public void StartCountdown()
     {
-        StorylineManager.Instance.PlayVoiceLines(startVoiceLines, () =>
-        {
-            isRunning = true;
-            timerPanel.SetActive(true);
-            ObjectifManager.Instance.ActiverObjectif(5);
-
-            alarmAudioSource.clip = alarmSound;
-            alarmAudioSource.loop = true;
-            alarmAudioSource.Play();
-
-            sceneLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
-            pulsing = true;
-            StartCoroutine(PulseLights());
-            StartCoroutine(Countdown());
-        });
+        if (startVoiceLines != null && startVoiceLines.Length > 0)
+            StorylineManager.Instance.PlayVoiceLines(startVoiceLines, () => LaunchCountdown());
+        else
+            LaunchCountdown();
     }
+
+    private void LaunchCountdown()
+{
+    Debug.Log("LaunchCountdown appelé");
+    isRunning = true;
+    timerPanel.SetActive(true);
+    Debug.Log("TimerPanel activé");
+
+    alarmAudioSource.clip = alarmSound;
+    alarmAudioSource.loop = true;
+    alarmAudioSource.Play();
+    Debug.Log("Alarme lancée");
+
+    sceneLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
+    Debug.Log("Lumières trouvées : " + sceneLights.Length);
+    pulsing = true;
+    StartCoroutine(PulseLights());
+    StartCoroutine(Countdown());
+}
 
     private IEnumerator PulseLights()
     {
@@ -65,7 +73,7 @@ public class AutoDestructionManager : MonoBehaviour
                 if (!l.CompareTag("Flashlight"))
                 {
                     l.color = Color.red;
-                    l.intensity = Mathf.Lerp(0.2f, 2f, intensity);
+                    l.intensity = Mathf.Lerp(0.2f, 20f, intensity);
                 }
             }
             yield return null;

@@ -15,5 +15,5 @@ MonoBehaviour:
   characterName: Thibaud
   modelPrefab: {fileID: 781294780896004131, guid: b16edf9881082c24a86986c5ddf3fa7e, type: 3}
   animatorOverride: {fileID: 0}
-  yOffset: -0.09
+  yOffset: -0.05
   cameraOffset: {x: 0, y: 0, z: 0.3}

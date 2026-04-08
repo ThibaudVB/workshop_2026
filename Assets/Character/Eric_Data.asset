@@ -15,5 +15,5 @@ MonoBehaviour:
   characterName: Eric
   modelPrefab: {fileID: 8619030416862452241, guid: 35c02525dbfe1c04ca1b98b380a41c96, type: 3}
   animatorOverride: {fileID: 22100000, guid: b120c24ea77d69047a2b416e4d203729, type: 2}
-  yOffset: -0.09
+  yOffset: -0.05
   cameraOffset: {x: 0, y: 0, z: 0.3}
