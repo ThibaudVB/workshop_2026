@@ -14,6 +14,8 @@ public class TriggerMonstreCinematique : MonoBehaviour
     [SerializeField] private float cinematicDuration = 5f;
     [SerializeField] private FearSystem fearSystem;
     [SerializeField] private StorylineManager.VoiceLine[] postCinematicVoiceLines;
+    [SerializeField] private AudioSource monsterVoiceAudioSource;
+    [SerializeField] private AudioClip monsterPatrolSound;
     private bool triggered = false;
 
     private void OnTriggerEnter(Collider other)
@@ -36,6 +38,13 @@ public class TriggerMonstreCinematique : MonoBehaviour
         monster.transform.position = pointA.position;
         monster.transform.LookAt(pointB);
 
+        if (monsterVoiceAudioSource != null && monsterPatrolSound != null)
+        {
+            monsterVoiceAudioSource.clip = monsterPatrolSound;
+            monsterVoiceAudioSource.loop = true;
+            monsterVoiceAudioSource.Play();
+        }
+
         monsterAnimator.SetTrigger("Near");
 
         float elapsed = 0f;
@@ -53,6 +62,9 @@ public class TriggerMonstreCinematique : MonoBehaviour
         monster.transform.position = waypointStart.position;
         monsterAgent.enabled = true;
         monsterAgent.Warp(waypointStart.position);
+
+        if (monsterVoiceAudioSource != null)
+            monsterVoiceAudioSource.Stop();
 
         fearSystem.ResetFear();
         PlayerController.cinematicMode = false;
