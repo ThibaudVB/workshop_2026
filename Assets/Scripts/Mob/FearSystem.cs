@@ -17,7 +17,9 @@ public class FearSystem : MonoBehaviour
     private float fearSmoothSpeed = 3f;
 
     public float CurrentFear => currentFear;
-    public float DistanceToMonster => monster != null ? Vector3.Distance(transform.position, monster.position) : float.MaxValue;
+    public float DistanceToMonster => monster != null && monster.gameObject.activeInHierarchy
+        ? Vector3.Distance(transform.position, monster.position)
+        : float.MaxValue;
 
     void Start()
     {
@@ -49,6 +51,13 @@ public class FearSystem : MonoBehaviour
 
     void CalculateFear()
     {
+        if (!monster.gameObject.activeInHierarchy)
+        {
+            targetFear = 0f;
+            currentFear = Mathf.Lerp(currentFear, 0f, fearSmoothSpeed * Time.deltaTime);
+            return;
+        }
+
         float distance = DistanceToMonster;
 
         if (distance >= maxFearDistance)

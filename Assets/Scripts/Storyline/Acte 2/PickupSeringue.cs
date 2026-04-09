@@ -3,6 +3,7 @@ using UnityEngine;
 public class PickupSeringue : Pickup
 {
     public static bool seringueCollected = false;
+    public CarlController carl;
 
     [System.Serializable]
     public class VoiceLine : StorylineManager.VoiceLine { }
@@ -12,6 +13,7 @@ public class PickupSeringue : Pickup
     protected override void OnCollected()
     {
         seringueCollected = true;
+        carl.OnSoinRecupere();
         ObjectifManager.Instance.DesactiverTout();
         StorylineManager.Instance.PlayVoiceLines(voiceLines, () =>
         {

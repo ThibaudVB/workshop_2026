@@ -61,6 +61,7 @@ public class AlienMonster : MonoBehaviour
     private bool hasScreamed = false;
     private bool isChasing = false;
     private bool wasChasing = false;
+    private Coroutine chaseCoroutine;
 
     private bool isCameraFrozen = false;
     private Vector3 frozenCameraPos;
@@ -86,7 +87,6 @@ public class AlienMonster : MonoBehaviour
         if (agent.isOnNavMesh && waypoints.Length > 0)
             agent.SetDestination(waypoints[0].position);
 
-        // Lance le son de patrouille au démarrage
         if (voiceAudioSource != null && patrolSound != null)
         {
             voiceAudioSource.clip = patrolSound;
@@ -108,8 +108,7 @@ public class AlienMonster : MonoBehaviour
         {
             if (isChasing)
             {
-                isChasing = false;
-                SwitchToPatrolSound();
+                StopChase();
             }
             Patrol();
             return;
@@ -130,22 +129,31 @@ public class AlienMonster : MonoBehaviour
         {
             if (agent.remainingDistance < 0.5f)
             {
-                isChasing = false;
-                SwitchToPatrolSound();
+                StopChase();
                 Patrol();
             }
         }
 
-        // Détecte le changement d'état pour les sons
         if (isChasing && !wasChasing)
         {
-            StartCoroutine(PlayChaseSounds());
+            chaseCoroutine = StartCoroutine(PlayChaseSounds());
             wasChasing = true;
         }
         else if (!isChasing && wasChasing)
         {
             wasChasing = false;
         }
+    }
+
+    void StopChase()
+    {
+        isChasing = false;
+        if (chaseCoroutine != null)
+        {
+            StopCoroutine(chaseCoroutine);
+            chaseCoroutine = null;
+        }
+        SwitchToPatrolSound();
     }
 
     void SwitchToPatrolSound()
@@ -193,10 +201,7 @@ public class AlienMonster : MonoBehaviour
         float soundRange = isCrouching ? soundRangeCrouch :
                            isRunning ? soundRangeRun : soundRangeWalk;
 
-        if (distance < soundRange)
-            return true;
-
-        return false;
+        return distance < soundRange;
     }
 
     void LateUpdate()
@@ -223,7 +228,6 @@ public class AlienMonster : MonoBehaviour
         agent.SetDestination(player.position);
         isChasing = true;
         isWaiting = false;
-        StopCoroutine("WaitAtWaypoint");
     }
 
     void Patrol()
@@ -249,7 +253,6 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
-        // Arrête tous les sons du monstre
         if (voiceAudioSource != null)
             voiceAudioSource.Stop();
 
@@ -300,6 +303,9 @@ public class AlienMonster : MonoBehaviour
 
         if (deathScreen != null)
             deathScreen.SetActive(true);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     IEnumerator TurnCameraToMonster()

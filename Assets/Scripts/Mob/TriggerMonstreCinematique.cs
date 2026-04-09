@@ -55,19 +55,24 @@ public class TriggerMonstreCinematique : MonoBehaviour
                 pointB.position,
                 moveSpeed * Time.deltaTime
             );
+
+            if (Vector3.Distance(monster.transform.position, pointB.position) < 0.1f)
+                break;
+
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        monster.transform.position = waypointStart.position;
         monsterAgent.enabled = true;
         monsterAgent.Warp(waypointStart.position);
+        monster.transform.position = waypointStart.position;
 
         if (monsterVoiceAudioSource != null)
             monsterVoiceAudioSource.Stop();
 
         fearSystem.ResetFear();
         PlayerController.cinematicMode = false;
+        AlienMonster.cinematicMode = false;
 
         StorylineManager.Instance.PlayVoiceLines(postCinematicVoiceLines);
     }

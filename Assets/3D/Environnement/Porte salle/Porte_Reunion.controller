@@ -20,7 +20,7 @@ AnimatorStateMachine:
     m_Position: {x: 730, y: 250, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 3942530444775935911}
-    m_Position: {x: 260, y: 190, z: 0}
+    m_Position: {x: 270, y: 230, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -39,8 +39,8 @@ AnimatorStateTransition:
   m_PrefabAsset: {fileID: 0}
   m_Name: 
   m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: Close
+  - m_ConditionMode: 2
+    m_ConditionEvent: character_nearby
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 6231566249847970889}
@@ -112,7 +112,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: OpenedDoor
+  m_Name: 'OpenedDoor '
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -153,6 +153,12 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
+  - m_Name: character_nearby
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
   m_AnimatorLayers:
   - serializedVersion: 5
     m_Name: Base Layer
@@ -176,7 +182,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: Open
+    m_ConditionEvent: character_nearby
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -2662535068924217621}
@@ -214,7 +220,7 @@ AnimatorState:
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
   m_Motion: {fileID: 7400000, guid: f30edafba2ebee34f9ed4b829ee131c4, type: 2}
-  m_Tag: 
+  m_Tag: ClosedDoor
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 

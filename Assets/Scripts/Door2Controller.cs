@@ -18,34 +18,33 @@ public class Door2Controller : MonoBehaviour
 
         float distance = Vector3.Distance(player.position, this.transform.position);
 
-        if (distance < 2.5f && !isOpen)
+        if (distance < 3f && !isOpen)
         {
             isOpen = true;
             isAnimating = true;
             audioSource.PlayOneShot(doorSound);
             anim.SetBool(NearbyHash, true);
-            StartCoroutine(WaitForState("door_2_opened"));
+            StartCoroutine(OpenThenWait());
         }
-        else if (distance > 3f && isOpen)
+        else if (distance > 4f && isOpen)
         {
             isOpen = false;
             isAnimating = true;
             audioSource.PlayOneShot(doorSound);
             anim.SetBool(NearbyHash, false);
-            StartCoroutine(WaitForState("door_2_closed"));
+            StartCoroutine(WaitForAnimation(2f));
         }
     }
 
-    IEnumerator WaitForState(string stateName)
+    IEnumerator OpenThenWait()
     {
-        yield return null;
-        yield return null;
+        yield return new WaitForSeconds(5f);
+        isAnimating = false;
+    }
 
-        while (!anim.GetCurrentAnimatorStateInfo(0).IsName(stateName))
-        {
-            yield return null;
-        }
-
+    IEnumerator WaitForAnimation(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         isAnimating = false;
     }
 }
