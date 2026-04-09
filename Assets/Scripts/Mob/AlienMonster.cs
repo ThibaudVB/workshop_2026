@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class AlienMonster : MonoBehaviour
 {
@@ -38,11 +40,27 @@ public class AlienMonster : MonoBehaviour
     public float cameraTurnSpeed = 3f;
     public AudioClip screamerSound;
 
+    [Header("Screamer Camera")]
+    [SerializeField] private float cameraHeightOffset = 1.5f;
+    [SerializeField] private bool overrideCameraPosition = true;
+
+    [Header("Screamer Player Position")]
+    [SerializeField] private Vector3 playerPositionOffset = new Vector3(0f, 0f, -1f);
+
+    [Header("Post Processing")]
+    [SerializeField] private Volume postProcessVolume;
+
+    [Header("Sons")]
+    [SerializeField] private AudioClip patrolSound;
+    [SerializeField] private AudioClip[] chaseSounds;
+    [SerializeField] private AudioSource voiceAudioSource;
+
     private NavMeshAgent agent;
     private AudioSource audioSource;
     private Animator animator;
     private bool hasScreamed = false;
     private bool isChasing = false;
+    private bool wasChasing = false;
 
     private bool isCameraFrozen = false;
     private Vector3 frozenCameraPos;
@@ -67,6 +85,14 @@ public class AlienMonster : MonoBehaviour
 
         if (agent.isOnNavMesh && waypoints.Length > 0)
             agent.SetDestination(waypoints[0].position);
+
+        // Lance le son de patrouille au démarrage
+        if (voiceAudioSource != null && patrolSound != null)
+        {
+            voiceAudioSource.clip = patrolSound;
+            voiceAudioSource.loop = true;
+            voiceAudioSource.Play();
+        }
     }
 
     void Update()
@@ -80,7 +106,11 @@ public class AlienMonster : MonoBehaviour
 
         if (LockerDoor.IsPlayerHiding)
         {
-            if (isChasing) isChasing = false;
+            if (isChasing)
+            {
+                isChasing = false;
+                SwitchToPatrolSound();
+            }
             Patrol();
             return;
         }
@@ -101,9 +131,47 @@ public class AlienMonster : MonoBehaviour
             if (agent.remainingDistance < 0.5f)
             {
                 isChasing = false;
+                SwitchToPatrolSound();
                 Patrol();
             }
         }
+
+        // Détecte le changement d'état pour les sons
+        if (isChasing && !wasChasing)
+        {
+            StartCoroutine(PlayChaseSounds());
+            wasChasing = true;
+        }
+        else if (!isChasing && wasChasing)
+        {
+            wasChasing = false;
+        }
+    }
+
+    void SwitchToPatrolSound()
+    {
+        if (voiceAudioSource == null || patrolSound == null) return;
+        voiceAudioSource.loop = true;
+        voiceAudioSource.clip = patrolSound;
+        voiceAudioSource.Play();
+    }
+
+    IEnumerator PlayChaseSounds()
+    {
+        if (voiceAudioSource == null || chaseSounds == null || chaseSounds.Length == 0) yield break;
+
+        voiceAudioSource.loop = false;
+        voiceAudioSource.Stop();
+
+        while (isChasing)
+        {
+            AudioClip clip = chaseSounds[Random.Range(0, chaseSounds.Length)];
+            voiceAudioSource.clip = clip;
+            voiceAudioSource.Play();
+            yield return new WaitForSeconds(clip.length);
+        }
+
+        SwitchToPatrolSound();
     }
 
     bool CanDetectPlayer()
@@ -135,9 +203,9 @@ public class AlienMonster : MonoBehaviour
     {
         if (isCameraFrozen)
         {
-            player.position = frozenPlayerPos;
             playerCamera.transform.localPosition = frozenCameraPos;
             playerCamera.transform.localRotation = frozenCameraRot;
+            player.position = frozenPlayerPos;
         }
     }
 
@@ -181,8 +249,30 @@ public class AlienMonster : MonoBehaviour
 
     IEnumerator ScreamerSequence()
     {
-        foreach (Light l in playerCamera.GetComponentsInChildren<Light>())
-            l.enabled = false;
+        // Arrête tous les sons du monstre
+        if (voiceAudioSource != null)
+            voiceAudioSource.Stop();
+
+        CharacterLoader characterLoader = player.GetComponent<CharacterLoader>();
+        if (characterLoader != null && characterLoader.CurrentModel != null)
+            characterLoader.CurrentModel.SetActive(false);
+
+        if (postProcessVolume != null)
+        {
+            if (postProcessVolume.profile.TryGet<Bloom>(out var bloom))
+                bloom.active = false;
+        }
+
+        Vector3 targetPlayerPos = transform.position + transform.rotation * playerPositionOffset;
+        targetPlayerPos.y = player.position.y;
+        player.position = targetPlayerPos;
+        player.rotation = Quaternion.LookRotation(transform.position - player.position);
+
+        if (overrideCameraPosition)
+        {
+            playerCamera.transform.localPosition = new Vector3(0f, cameraHeightOffset, 0f);
+            playerCamera.transform.localRotation = Quaternion.identity;
+        }
 
         agent.isStopped = true;
         isChasing = false;

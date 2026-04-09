@@ -14,6 +14,7 @@
   <Project Path="FastSpringBone10.csproj" />
   <Project Path="UniHumanoid.Editor.csproj" />
   <Project Path="VrmLib.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="VRM10.Tests.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="UniGLTF.UniUnlit.csproj" />

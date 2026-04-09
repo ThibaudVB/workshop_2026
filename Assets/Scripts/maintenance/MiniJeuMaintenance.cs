@@ -221,11 +221,10 @@ public class MiniJeuMaintenance : MonoBehaviour
 
         Light[] allLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
         foreach (Light l in allLights)
-        {
             if (!l.CompareTag("Flashlight"))
                 l.enabled = true;
-        }
 
+        VentiloManager.Instance.TurnAllOn();
         StartCoroutine(RallumageSequence());
     }
 

@@ -14,6 +14,8 @@ public class VoiceLineSequence : MonoBehaviour
     [SerializeField] private VoiceLine[] introVoiceLines;
     [SerializeField] private VoiceLine[] afterBlackoutVoiceLines;
     [SerializeField] private AudioClip blackoutSound;
+    [SerializeField] private AudioSource ambianceAudioSource;
+    [SerializeField] private AudioClip pressionSound;
     private AudioSource audioSource;
     private Animator playerAnimator;
 
@@ -56,13 +58,21 @@ public class VoiceLineSequence : MonoBehaviour
 
         Light[] allLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
         foreach (Light l in allLights)
-        {
             if (!l.CompareTag("Flashlight"))
                 l.enabled = false;
-        }
+
+        VentiloManager.Instance.TurnAllOff();
 
         playerAnimator.SetBool("SitDown", false);
         PlayerController.blockMovement = false;
+
+        // Lance le son de pression ambiant
+        if (ambianceAudioSource != null && pressionSound != null)
+        {
+            ambianceAudioSource.clip = pressionSound;
+            ambianceAudioSource.loop = true;
+            ambianceAudioSource.Play();
+        }
 
         ObjectifManager.Instance.ActiverObjectif(0);
         StartCoroutine(PlayAfterBlackout());

@@ -1,10 +1,20 @@
 using UnityEngine;
+using TMPro;
 
 public class ObjectifManager : MonoBehaviour
 {
     public static ObjectifManager Instance;
 
-    [SerializeField] private GameObject[] objectifs;
+    [System.Serializable]
+    public class Objectif
+    {
+        public GameObject ping;
+        [TextArea] public string texte;
+    }
+
+    [SerializeField] private Objectif[] objectifs;
+    [SerializeField] private TextMeshProUGUI objectifText;
+    [SerializeField] private GameObject objectifUI;
 
     void Awake()
     {
@@ -12,20 +22,48 @@ public class ObjectifManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    void Start()
+    {
+        if (objectifText != null)
+            objectifText.text = "";
+
+        if (objectifUI != null)
+            objectifUI.SetActive(false);
+
+        foreach (Objectif obj in objectifs)
+            if (obj.ping != null)
+                obj.ping.SetActive(false);
+    }
+
     public void ActiverObjectif(int index)
     {
-        // Désactive tous les objectifs
-        foreach (GameObject obj in objectifs)
-            obj.SetActive(false);
+        foreach (Objectif obj in objectifs)
+            if (obj.ping != null)
+                obj.ping.SetActive(false);
 
-        // Active uniquement celui voulu
         if (index >= 0 && index < objectifs.Length)
-            objectifs[index].SetActive(true);
+        {
+            if (objectifs[index].ping != null)
+                objectifs[index].ping.SetActive(true);
+
+            if (objectifText != null)
+                objectifText.text = objectifs[index].texte;
+
+            if (objectifUI != null)
+                objectifUI.SetActive(true);
+        }
     }
 
     public void DesactiverTout()
     {
-        foreach (GameObject obj in objectifs)
-            obj.SetActive(false);
+        foreach (Objectif obj in objectifs)
+            if (obj.ping != null)
+                obj.ping.SetActive(false);
+
+        if (objectifText != null)
+            objectifText.text = "";
+
+        if (objectifUI != null)
+            objectifUI.SetActive(false);
     }
 }

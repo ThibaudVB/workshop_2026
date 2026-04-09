@@ -11,6 +11,7 @@ public class CharacterLoader : MonoBehaviour
     public RuntimeAnimatorController baseAnimatorController;
 
     private GameObject currentModel;
+    public GameObject CurrentModel => currentModel;
 
     void Start()
     {
@@ -32,12 +33,10 @@ public class CharacterLoader : MonoBehaviour
         if (currentModel != null)
             Destroy(currentModel);
 
-        // Instancie le modèle comme enfant du Player
         currentModel = Instantiate(data.modelPrefab, transform);
         currentModel.transform.localPosition = new Vector3(0f, data.yOffset, 0f);
         currentModel.transform.localRotation = Quaternion.identity;
 
-        // Configure l'Animator
         Animator anim = currentModel.GetComponent<Animator>();
         if (anim != null)
         {
@@ -49,18 +48,15 @@ public class CharacterLoader : MonoBehaviour
             anim.applyRootMotion = false;
         }
 
-        // Configure le bridge
         PlayerAnimatorBridge bridge = currentModel.GetComponent<PlayerAnimatorBridge>();
         if (bridge == null)
             bridge = currentModel.AddComponent<PlayerAnimatorBridge>();
 
         bridge.playerRb = GetComponent<Rigidbody>();
 
-        // Ajuste la caméra pour ce personnage
         Camera cam = GetComponentInChildren<Camera>();
         if (cam != null)
         {
-            // Ajoute ou récupère le script CameraOffset sur la caméra
             CameraOffset camOffset = cam.GetComponent<CameraOffset>();
             if (camOffset == null)
                 camOffset = cam.gameObject.AddComponent<CameraOffset>();
